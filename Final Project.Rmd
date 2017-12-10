@@ -1,6 +1,8 @@
 ---
 title: "Final Project"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -16,5 +18,131 @@ hospital = read_excel("./data/GHProject_Dataset.xlsx") %>%
 ```
 
 ```{r}
-du = hospital[!duplicated(hospital$patientid), ]
+data = hospital[!duplicated(hospital$patientid), ] 
+#delete duplicated patientid, patientid and visitid is now one-to-one
+
+data = 
+  data %>%
+  separate(admitdtm, into = c("weekday", "day_month", "year"), sep = ",") %>%
+  mutate(day_month = trimws(day_month), year = trimws(year)) %>%
+  separate(day_month, into = c("month_1", "date"), sep = " ") %>%
+  mutate(month = match(month_1, month.name)) %>%
+  mutate(date_of_admit = paste(month, date, year, sep = "/"),
+         date_of_admit = as.Date(date_of_admit, "%m/%d/%Y")) %>%
+  arrange(date_of_admit) %>%
+  select(-weekday, -month_1, -month, -year, -date) %>%
+  select(patientid, visitid, loshours, losdays2, date_of_admit, everything())
+# til now just change the date format into yy-mm-dd
+# I haven't deleted any important variable columns just in case you guys need them while modeling and I have to tranform each variable to see its skewness.
+
+#Delete the conflict that a patient stays more than 30 days and with asmission into the hoppital within past 30 days.
+### NOT sure about this!!! because it's saying readmit..after doing so, it deleted 6 entries.
+data = data[!(data$is30dayreadmit == 1 & data$losdays2 > 30),]
+
+###########################descriptive statistics of each variable############################
+########continuous variables (9)
+data_subset1 = data %>%
+  select(losdays2, ageyear, bmi, 
+         bpsystolic, o2sat, temperature, 
+         heartrate, respirationrate, bpdiastolic)
+
+table_pre = map(data_subset1,summary) # the descriptive data shows bmi column has a lot of NA's
+
+#create a table that combines the summary of the 9 continuous variables
+knitr::kable(bind_rows(
+  c(variable = "Losdays2",table_pre[[1]]),#good to do log transform
+  c(variable = "AgeYear", table_pre[[2]]),#quite normal
+  c(variable = "bmi",table_pre[[3]]),#688 missing values and long tail, 3.1 min and 123 max, outlier/error
+  c(variable = "bpsystolic", table_pre[[4]]),
+  c(variable = "o2sat", table_pre[[5]]), # 10 observation below 90, 80 observation above 100, 2% of the data
+  c(variable = "temperature", table_pre[[6]]), #3 less than 30 and 2 more than 50
+  c(variable = "heartrate", table_pre[[7]]), # 2 more than 240 (rare heart rate or caused by disease)
+  c(variable = "respirationrate", table_pre[[8]]),
+  c(variable = "bpdiastolic", table_pre[[9]])
+))
+
+
+
+
+
+#########categorical variables
+#The Modified Early Warning Score (MEWS) 
+#was 0-1=normal, 2-3=increase caution, 4-5=further deterioration, >5 immediate action required
+table(data$mews) # using a table to check the distribution of mews. Skewed!
+#make them into only 3 categories
+#mews_new: 1=normal; 2=increase caution; 3 = further deterioration or immediate action required
+data$mews_new <- ifelse(data$mews == 0|data$mews == 1, 1, ifelse(data$mews == 2|data$mews == 3, 2, 3))
+table(data$mews_new) # a bit better
+
+
+#Cindex ranks patients based on severity of comorbidity: 0=normal, 1-2=mild, 3-4=moderate and >5 = severe
+table(data$cindex) # same as above - skewed
+#make them into three categories
+data$cindex_new <- ifelse(data$cindex == 0,"normal", ifelse(data$cindex == 1|data$cindex == 2,"mild","moderate to severe"))
+table(data$cindex_new) # after balacing , better now.
+
+#evisit -skewed
+table(data$evisit) 
+data$evisit_new <- ifelse(data$evisit==0|data$evisit==1, 1, 2)
+table(data$evisit_new)
+#evisit_new:1 = 0or1 emergency department visit; 2=more than 1 emergency department visits.
+
+
+#ICU_Flag: 1=if during hospitalization, the patient had a visit in the ICU; 0=otherwise, -skewed
+table(data$icu_flag)  
+
+#gender  - ok
+table(data$gender)
+
+#race:   - skewed
+table(data$race)
+
+data$race_new <- ifelse(data$race=="White","White", ifelse(data$race=="African Amer/Black","African Amer/Black","Other race"))
+table(data$race_new)
+#only have 3 categories, AAB, White, other race.
+
+#religion: recode them
+data$religion[data$religion == "Angelican"] <- "Christian"
+data$religion[data$religion == "Non Denominational"] <- "Christian"
+data$religion[data$religion == "Catholic"] <- "Christian"
+data$religion[data$religion == "Hebrew"] <- "Jewish"
+data$religion[data$religion == "Mormon"] <- "Other"
+
+table(data$religion)
+
+
+#MaritalStatus: - skewed
+table(data$maritalstatus)
+data$marital_new <- ifelse(data$maritalstatus=="Civial Union"|data$maritalstatus=="Married"|data$maritalstatus=="Civial Union","Not single","single")
+table(data$marital_new)
+
+
+#InsuranceType:  -skewed
+table(data$insurancetype)
+data$insurance_new <- ifelse(data$insurancetype=="Private", "Private", "Public")
+table(data$insurance_new)
+
+
+
+#visualize dataset for each variable
+attach(data)
+par(mfrow=c(3,3))
+hist(losdays2) #highly skewed
+hist(ageyear)
+hist(bmi)
+hist(bpsystolic)
+hist(o2sat)
+hist(temperature)
+hist(heartrate)
+hist(respirationrate)
+hist(bpdiastolic)
+
+#try transformations of data
+par(mfrow=c(2,2))
+hist(log(data$losdays2)) #good to do log transformation
+hist(log(data$heartrate)) #see some improvements
+hist(log(data$respirationrate)) #see some improvements
+
+
+
 ```
