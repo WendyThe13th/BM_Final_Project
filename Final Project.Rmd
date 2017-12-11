@@ -50,7 +50,7 @@ data = data[!(data$is30dayreadmit == 1 & data$losdays2 > 30),]
 ###########################descriptive statistics of each variable############################
 ########continuous variables (9)
 data_subset1 = data %>%
-  select(losdays2, ageyear, bmi, 
+  dplyr::select(losdays2, ageyear, bmi, 
          bpsystolic, o2sat, temperature, 
          heartrate, respirationrate, bpdiastolic)
 
@@ -197,7 +197,7 @@ hist(bpdiastolic)
 data_update <- data %>%
    mutate(trans_losdays2 = log(losdays2)) %>%
    filter(icu_flag == 0) %>%
-   select(trans_losdays2, is30dayreadmit, cindex_new, evisit_new, ageyear, gender, race_new, religion, marital_new, insurance_new, respirationrate, bpdiastolic, o2sat, bpsystolic, temperature, heartrate, bmi, mews_new) %>%
+   dplyr::select(trans_losdays2, is30dayreadmit, cindex_new, evisit_new, ageyear, gender, race_new, religion, marital_new, insurance_new, respirationrate, bpdiastolic, o2sat, bpsystolic, temperature, heartrate, bmi, mews_new) %>%
    na.omit()
  
 
@@ -271,7 +271,7 @@ summary(lm17)
 
 # Then we exculde the variables which are non-significant
 data_update <- data_update %>%
-  select(-race_new, -religion,-gender)
+  dplyr::select(-race_new, -religion,-gender)
 ```
 
 ```{r}
