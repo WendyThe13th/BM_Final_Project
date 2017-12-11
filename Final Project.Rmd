@@ -2,7 +2,7 @@
 title: "Final Project"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -11,6 +11,13 @@ library(tidyverse)
 library(janitor)
 library(readxl)
 library(leaps)
+library(ISLR)                          
+library(psych)                         # R data description
+library(boot)                          # For cv.glm()
+library(dplyr)
+library(car)
+library(MPV)
+library(HH)
 ```
 
 ```{r}
@@ -31,8 +38,8 @@ data =
   mutate(date_of_admit = paste(month, date, year, sep = "/"),
          date_of_admit = as.Date(date_of_admit, "%m/%d/%Y")) %>%
   arrange(date_of_admit) %>%
-  select(-weekday, -month_1, -month, -year, -date) %>%
-  select(patientid, visitid, loshours, losdays2, date_of_admit, everything())
+  dplyr::select(-weekday, -month_1, -month, -year, -date) %>%
+  dplyr::select(patientid, visitid, loshours, losdays2, date_of_admit, everything())
 # til now just change the date format into yy-mm-dd
 # I haven't deleted any important variable columns just in case you guys need them while modeling and I have to tranform each variable to see its skewness.
 
@@ -295,4 +302,78 @@ lm_select <- lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + agey
 summary(lm_select)
 ```
 
+##David
+####Residuals vs fitted values plot
+```{r}
+plot(fitted(lm_select), resid(lm_select), xlab = "Predicted/Fitted value", ylab = "Residual")
+title("(a) Residual Plot for Y (trans_losdays2) ")
+abline(0, 0)
+```
 
+#### Quantile - Quantile plot (QQ-plot)
+```{r}
+qqnorm(resid(lm_select), xlab = "Expected Value", ylab = "Residual", main = "")
+qqline(resid(lm_select))
+title("(a) QQ Plot for Y (trans_losdays2)")
+```
+
+###All diagnostics pltos
+```{r}
+par(mfrox=c(2,2))
+plot(lm_select)
+```
+
+###Find the outliers
+```{r}
+stu_res<-rstandard(lm_select)
+outliers_y<-stu_res[abs(stu_res)>2.5]
+```
+
+
+###Remove extreme observations 
+```{r}
+hospital_no_outliers<-data_update[c(-8,-41,-133,-138,-189,-213,-233,-334,-508,-800,-818,-824,-832,-849,-910,-945,-1065,-1068,-1116,-1148,-1168,-1171,-1197,-1209,-1369,-1429,-1473,-1674,-1712,-1731,-1829,-1839,-1878,-12019,-2065,-2113,-2152,-2201,-2232,-2257,-2288,-2429,-2481),]
+mult.fit_no_outliers<- lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data=hospital_no_outliers) 
+
+summary(mult.fit_no_outliers)
+#After removing, the r-squared value increases by approximately 0.2.
+```
+#####The reason We remove these outliers is not because these are outliers but we have to meet the normality assumptions.
+
+###Checking for multicollinearity: VIF
+```{r}
+vif(mult.fit_no_outliers)
+#All the values are far below 5, so it indicates there's no collinearity here.
+```
+
+###Bootstrap: the result of the estimates seems quite acceptable, low bias
+```{r}
+set.seed(1)
+
+# Our usual regression, no bootstrap yet
+boot.fn<-function(data, index){
+	return(coef(lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate,data=data,subset=index)))
+}
+boot.fn(hospital_no_outliers,1:2546)
+
+
+
+# Use function boot() to repeat the sampling 10000 times.
+# Repeat 10000 times to get the estimates, SEs ad bias
+
+boot(hospital_no_outliers, boot.fn, 10000)
+
+```
+
+###Cross validation: LOOCV
+```{r}
+
+# Use glm() instead of lm() because of cv.glm() function
+glm.fit<-glm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data=hospital_no_outliers)
+
+cv.err<-cv.glm(hospital_no_outliers, glm.fit)
+
+cv.err$delta
+anova(mult.fit_no_outliers)
+# The two delta values are similar, and comparing to the MSE, they are also similar, which means our model has a good predictive ability. However, the r-squared is quite low. So it's quite contradictory..?
+```
