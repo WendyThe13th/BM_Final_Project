@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(janitor)
 library(readxl)
+library(leaps)
 ```
 
 ```{r}
@@ -60,7 +61,7 @@ knitr::kable(bind_rows(
   c(variable = "respirationrate", table_pre[[8]]),
   c(variable = "bpdiastolic", table_pre[[9]])
 ))
-
+ 
 
 
 
@@ -138,11 +139,160 @@ hist(respirationrate)
 hist(bpdiastolic)
 
 #try transformations of data
-par(mfrow=c(2,2))
+
 hist(log(data$losdays2)) #good to do log transformation
-hist(log(data$heartrate)) #see some improvements
-hist(log(data$respirationrate)) #see some improvements
-
-
 
 ```
+
+Wendy:
+
+```{r}
+# Replace "funny" characters
+# Looking at the histograms and googling about the vital signs, we can see that there are some "funny" characters which are obviously unusual, so we decide to replace those with NA.
+
+# We replace BMI lower than 12 or higher than 50
+data$bmi[data$bmi < 12|data$bmi > 50] <- NA
+
+
+# We replace oxygen saturation higher than 200
+data$o2sat[data$o2sat > 200] <- NA
+
+# Human's heart will stop beating if the body's temperature is lower than 24 or higher than 47
+data$temperature[data$temperature < 24|data$temperature > 47] <- NA
+
+# We replace heartrate higher than 220
+data$heartrate[data$heartrate > 220] <- NA
+
+# We replace respiration rate higher than 50
+data$respirationrate[data$respirationrate > 50] <- NA
+
+# We replace BPD lower than 40 or higher than 140
+data$bpdiastolic[data$bpdiastolic < 40|data$bpdiastolic > 140] <- NA
+
+# After removing "funny" values, we look at the distributions of the predictors again.
+attach(data)
+par(mfrow=c(3,3))
+hist(ageyear)
+hist(bmi)
+hist(bpsystolic)
+hist(o2sat)
+hist(temperature)
+hist(heartrate)
+hist(respirationrate)
+hist(bpdiastolic)
+# We think there is no need to transform any predictors.
+```
+
+```{r}
+# variable selection
+# First, we look at the meaning of different variables. Obviously, patient id, visit id and  admitdtm has nothing to do with patient's lenghth of stay, so we exclude them from the model.
+# Next, we perform simple linear regression for each variable we select.
+data_update <- data %>%
+   mutate(trans_losdays2 = log(losdays2)) %>%
+   filter(icu_flag == 0) %>%
+   select(trans_losdays2, is30dayreadmit, cindex_new, evisit_new, ageyear, gender, race_new, religion, marital_new, insurance_new, respirationrate, bpdiastolic, o2sat, bpsystolic, temperature, heartrate, bmi, mews_new) %>%
+   na.omit()
+ 
+
+lm1 <- lm(trans_losdays2 ~ is30dayreadmit, data = data_update)
+summary(lm1)
+# is30dayreadmit is significant
+
+lm2 <- lm(trans_losdays2 ~ cindex_new, data = data_update)
+summary(lm2)
+# cindex is significant
+
+lm3 <- lm(trans_losdays2 ~ evisit_new, data = data_update)
+summary(lm3)
+# evisit is significant
+
+lm4 <- lm(trans_losdays2 ~ ageyear, data = data_update)
+summary(lm4)
+# ageyear is significant
+
+lm5 <- lm(trans_losdays2 ~ gender, data = data_update)
+summary(lm5)
+# gender is not significant
+
+lm6 <- lm(trans_losdays2 ~ race_new, data = data_update)
+summary(lm6)
+# race is not significant
+
+lm7 <- lm(trans_losdays2 ~ religion, data = data_update)
+summary(lm7)
+# religion is not significant
+
+lm8 <- lm(trans_losdays2 ~ marital_new, data = data_update)
+summary(lm8)
+# marital status is significant
+
+lm9 <- lm(trans_losdays2 ~ insurance_new, data = data_update)
+summary(lm9)
+# insurance type is significant
+
+lm10 <- lm(trans_losdays2 ~ respirationrate, data = data_update)
+summary(lm10)
+# respiration rate is significant
+
+lm11 <- lm(trans_losdays2 ~ bpdiastolic, data = data_update)
+summary(lm11)
+# bpdiastolic is significant
+
+lm12 <- lm(trans_losdays2 ~ o2sat, data = data_update)
+summary(lm12)
+# oxygen saturation is not really significant
+
+lm13 <- lm(trans_losdays2 ~ bpsystolic, data = data_update)
+summary(lm13)
+# bpsystolic is significant
+
+lm14 <- lm(trans_losdays2 ~ temperature, data = data_update)
+summary(lm14)
+# temperature is not really significant
+
+lm15 <- lm(trans_losdays2 ~ heartrate, data = data_update)
+summary(lm15)
+# heartrate is significant
+
+lm16 <- lm(trans_losdays2 ~ bmi, data = data_update)
+summary(lm16)
+# bmi is significant
+
+lm17 <- lm(trans_losdays2 ~ mews_new, data = data_update)
+summary(lm17)
+# mews is significant
+
+# Then we exculde the variables which are non-significant
+data_update <- data_update %>%
+  select(-race_new, -religion,-gender)
+```
+
+```{r}
+# Perform stepwise and best
+lm_model <- lm(trans_losdays2 ~ ., data = data_update)
+step(lm_model, direction = "both", trace = FALSE)
+
+best <- function(model, ...) 
+{
+  subsets <- regsubsets(formula(model), model.frame(model),
+                        nvmax=length(model$coefficient)-1,...)
+  subsets <- with(summary(subsets),
+                  cbind(p = as.numeric(rownames(which)), which, rss, rsq, adjr2, cp, bic))
+  
+  return(subsets)
+}  
+
+
+# Select the 'best' 1 model of all subsets
+round(best(lm_model, nbest = 1), 4)
+
+# Based on the results above, we choose model : 
+# trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate
+```
+
+```{r}
+lm_select <- lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data = data_update)
+summary(lm_select)
+```
+
+
