@@ -292,8 +292,8 @@ best <- function(model, ...)
 
 # Select the 'best' 1 model of all subsets
 round(best(lm_model, nbest = 1), 4)
+# From this selection step, we can look at the Cp and adjusted R-square of each model the procedure selects. We tend to find the model which has highest adjusted R-square and Cp which is closest to p and lower than p. Based on this criteria, we want to choose the model which includes 10 variables. However, this model excludes some predictors which we have included in the stepwise selection. After digging into the meaning and the significance of these predictors, we decide to choose model:
 
-# Based on the results above, we choose model : 
 # trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate
 ```
 
