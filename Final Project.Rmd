@@ -376,4 +376,5 @@ cv.err<-cv.glm(hospital_no_outliers, glm.fit)
 cv.err$delta
 anova(mult.fit_no_outliers)
 # The two delta values are similar, and comparing to the MSE, they are also similar, which means our model has a good predictive ability. However, the r-squared is quite low. So it's quite contradictory..?
+summary(glm.fit) #added a summary of the final model
 ```
