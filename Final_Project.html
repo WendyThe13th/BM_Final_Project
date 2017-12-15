@@ -939,7 +939,8 @@ round(best(lm_model, nbest = 1), 4)</code></pre>
 ## 13 -245.8632
 ## 14 -238.0418
 ## 15 -230.1868</code></pre>
-<pre class="r"><code># Based on the results above, we choose model : 
+<pre class="r"><code># From this selection step, we can look at the Cp and adjusted R-square of each model the procedure selects. We tend to find the model which has highest adjusted R-square and Cp which is closest to p and lower than p. Based on this criteria, we want to choose the model which includes 10 variables. However, this model excludes some predictors which we have included in the stepwise selection. After digging into the meaning and the significance of these predictors, we decide to choose model:
+
 # trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate</code></pre>
 <pre class="r"><code>lm_select &lt;- lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data = data_update)
 summary(lm_select)</code></pre>
@@ -1140,7 +1141,317 @@ cv.err$delta</code></pre>
 ## Residuals       2533 1675.88   0.662                      
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
-<pre class="r"><code># The two delta values are similar, and comparing to the MSE, they are also similar, which means our model has a good predictive ability. However, the r-squared is quite low. So it's quite contradictory..?</code></pre>
+<pre class="r"><code># The two delta values are similar, and comparing to the MSE, they are also similar, which means our model has a good predictive ability. However, the r-squared is quite low. So it's quite contradictory..?
+summary(glm.fit) #added a summary of the final model</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = trans_losdays2 ~ is30dayreadmit + cindex_new + 
+##     evisit_new + ageyear + marital_new + insurance_new + respirationrate + 
+##     bpdiastolic + bpsystolic + temperature + heartrate, data = hospital_no_outliers)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -4.9892  -0.4627   0.0181   0.5039   2.7398  
+## 
+## Coefficients:
+##                               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)                  -1.561166   0.881845  -1.770 0.076791 .  
+## is30dayreadmit                0.160564   0.048500   3.311 0.000944 ***
+## cindex_newmoderate to severe  0.146051   0.040458   3.610 0.000312 ***
+## cindex_newnormal             -0.012101   0.040110  -0.302 0.762905    
+## evisit_new                    0.190161   0.034036   5.587 2.56e-08 ***
+## ageyear                       0.009584   0.001064   9.006  &lt; 2e-16 ***
+## marital_newsingle             0.072484   0.032760   2.213 0.027016 *  
+## insurance_newPublic           0.089791   0.035838   2.505 0.012292 *  
+## respirationrate               0.029666   0.007390   4.014 6.14e-05 ***
+## bpdiastolic                  -0.004513   0.002176  -2.074 0.038146 *  
+## bpsystolic                   -0.004709   0.001223  -3.852 0.000120 ***
+## temperature                   0.044740   0.023361   1.915 0.055583 .  
+## heartrate                     0.007334   0.001339   5.476 4.77e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for gaussian family taken to be 0.6616168)
+## 
+##     Null deviance: 1927.2  on 2545  degrees of freedom
+## Residual deviance: 1675.9  on 2533  degrees of freedom
+## AIC: 6188.5
+## 
+## Number of Fisher Scoring iterations: 2</code></pre>
+<pre class="r"><code>final_summary = sjPlot::sjt.lm(lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data=hospital_no_outliers))
+final_summary</code></pre>
+<table style="border-collapse:collapse; border:none;border-bottom:double;">
+<td style="padding:0.2cm; border-top:double;">
+ 
+</td>
+<td style="border-bottom:1px solid; padding-left:0.5em; padding-right:0.5em; border-top:double;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; border-bottom:1px solid; border-top:double;" colspan="3">
+trans_losdays2
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; font-style:italic;">
+ 
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em; font-style:italic;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; font-style:italic; ">
+B
+</td>
+<td style="padding:0.2cm; text-align:center; font-style:italic; ">
+CI
+</td>
+<td style="padding:0.2cm; text-align:center; font-style:italic; ">
+p
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; border-top:1px solid; text-align:left;">
+(Intercept)
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em; border-top:1px solid; ">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; border-top:1px solid; ">
+-1.56
+</td>
+<td style="padding:0.2cm; text-align:center; border-top:1px solid; ">
+-3.29 – 0.17
+</td>
+<td style="padding:0.2cm; text-align:center; border-top:1px solid; ">
+.077
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+is30dayreadmit
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.16
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.07 – 0.26
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+cindex_newmoderate to severe
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.15
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.07 – 0.23
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+cindex_newnormal
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.01
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.09 – 0.07
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+.763
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+evisit_new
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.19
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.12 – 0.26
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+ageyear
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.01
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.01 – 0.01
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+marital_newsingle
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.07
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.01 – 0.14
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+.027
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+insurance_newPublic
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.09
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.02 – 0.16
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+.012
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+respirationrate
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.03
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.02 – 0.04
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+bpdiastolic
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.00
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.01 – -0.00
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+.038
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+bpsystolic
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.00
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.01 – -0.00
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+temperature
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.04
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+-0.00 – 0.09
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+.056
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left;">
+heartrate
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.01
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+0.00 – 0.01
+</td>
+<td style="padding:0.2cm; text-align:center; ">
+&lt;.001
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left; border-top:1px solid;">
+Observations
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em; border-top:1px solid;">
+ 
+</td>
+<td style="padding:0.2cm; padding-top:0.1cm; padding-bottom:0.1cm; text-align:center; border-top:1px solid;" colspan="3">
+2546
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+R<sup>2</sup> / adj. R<sup>2</sup>
+</td>
+<td style="padding-left:0.5em; padding-right:0.5em;">
+ 
+</td>
+<td style="padding:0.2cm; text-align:center; padding-top:0.1cm; padding-bottom:0.1cm;" colspan="3">
+.130 / .126
+</td>
+</tr>
+</table>
 </div>
 </div>
 

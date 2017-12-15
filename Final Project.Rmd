@@ -377,4 +377,7 @@ cv.err$delta
 anova(mult.fit_no_outliers)
 # The two delta values are similar, and comparing to the MSE, they are also similar, which means our model has a good predictive ability. However, the r-squared is quite low. So it's quite contradictory..?
 summary(glm.fit) #added a summary of the final model
+final_summary = sjPlot::sjt.lm(lm(trans_losdays2 ~ is30dayreadmit + cindex_new + evisit_new + ageyear + marital_new + insurance_new + respirationrate +  bpdiastolic + bpsystolic + temperature + heartrate, data=hospital_no_outliers))
+final_summary
+
 ```
